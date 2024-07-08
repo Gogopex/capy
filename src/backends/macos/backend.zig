@@ -195,12 +195,89 @@ pub const Window = struct {
 
     pub fn show(self: *Window) void {
         self.peer.msgSend(void, "makeKeyAndOrderFront:", .{self.peer.value});
-        _ = activeWindows.fetchAdd(1, .Release);
+        _ = activeWindows.fetchAdd(1, .release);
     }
 
     pub fn close(self: *Window) void {
         self.peer.msgSend(void, "close", .{});
-        _ = activeWindows.fetchSub(1, .Release);
+        _ = activeWindows.fetchSub(1, .release);
+    }
+
+    pub fn registerTickCallback(self: *Window) void {
+        _ = self;
+        // TODO
+    }
+};
+
+pub const ScrollView = struct {
+    peer: objc.Object,
+
+    pub usingnamespace Events(ScrollView);
+
+    pub fn create() BackendError!ScrollView {
+        const NSScrollView = objc.getClass("NSScrollView").?;
+        const scrollView = NSScrollView.msgSend(objc.Object, "alloc", .{});
+        _ = scrollView.msgSend(objc.Object, "initWithFrame:", .{AppKit.NSRect.make(0, 0, 100, 100)});
+        return ScrollView{ .peer = scrollView };
+    }
+    pub fn setChild(self: *ScrollView, child: PeerType) void {
+        self.peer.setProperty("documentView", child);
+    }
+};
+
+pub const TextField = struct {
+    peer: objc.Object,
+
+    pub usingnamespace Events(TextField);
+
+    pub fn create() BackendError!TextField {
+        const NSTextField = objc.getClass("NSTextField").?;
+        const textField = NSTextField.msgSend(objc.Object, "alloc", .{});
+        _ = textField.msgSend(objc.Object, "initWithFrame:", .{AppKit.NSRect.make(0, 0, 100, 20)});
+        return TextField{ .peer = textField };
+    }
+    pub fn setText(self: *TextField, text: []const u8) void {
+        const pool = objc.AutoreleasePool.init();
+        defer pool.deinit();
+        self.peer.setProperty("stringValue", AppKit.nsString(text));
+    }
+    pub fn setAlignment(self: *TextField, alignement: shared.Alignment) void {
+        const pool = objc.AutoreleasePool.init();
+        defer pool.deinit();
+        const resolved_alignement = switch (alignement) {
+            shared.Alignment.Left => AppKit.NSTextAlignment.Left,
+            shared.Alignment.Center => AppKit.NSTextAlignment.Center,
+            shared.Alignment.Right => AppKit.NSTextAlignment.Right,
+        };
+        self.peer.setProperty("alignment", @as(u8, resolved_alignement));
+    }
+};
+
+pub const Label = struct {
+    peer: objc.Object,
+
+    pub usingnamespace Events(Label);
+
+    pub fn create() BackendError!Label {
+        const NSTextField = objc.getClass("NSTextField").?;
+        const label = NSTextField.msgSend(objc.Object, "alloc", .{});
+        _ = label.msgSend(objc.Object, "initWithFrame:", .{AppKit.NSRect.make(0, 0, 100, 20)});
+        return Label{ .peer = label };
+    }
+    pub fn setText(self: *Label, text: [*:0]const u8) void {
+        const pool = objc.AutoreleasePool.init();
+        defer pool.deinit();
+        self.peer.setProperty("stringValue", AppKit.nsString(text));
+    }
+    pub fn setAlignment(self: *Label, alignement: shared.Alignment) void {
+        const pool = objc.AutoreleasePool.init();
+        defer pool.deinit();
+        const resolved_alignement = switch (alignement) {
+            shared.Alignment.Left => AppKit.NSTextAlignment.Left,
+            shared.Alignment.Center => AppKit.NSTextAlignment.Center,
+            shared.Alignment.Right => AppKit.NSTextAlignment.Right,
+        };
+        self.peer.setProperty("alignment", @as(u8, resolved_alignement));
     }
 };
 
